@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "nexus": {
+      "command": "node",
+      "args": ["tools/mcp_nexus_server.js"],
+      "env": {
+        "OMNIROUTE_URL": "http://localhost:8080",
+        "OBSIDIAN_VAULT": "D:\\ISHIDA"
+      }
+    }
+  }
+}
