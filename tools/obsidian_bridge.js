@@ -101,38 +101,40 @@ function getStatus() {
 }
 
 // CLI handler
-const args = process.argv.slice(2);
-const command = args[0] || 'status';
+if (require.main === module) {
+    const args = process.argv.slice(2);
+    const command = args[0] || 'status';
 
-switch (command.toLowerCase()) {
-    case 'status':
-        getStatus();
-        break;
-    case 'launch':
-        launchObsidian(args[1] || getPrimaryVault());
-        break;
-    case 'open':
-        if (!args[1]) {
-            console.error('Usage: node obsidian_bridge.js open <note_name>');
-            process.exit(1);
-        }
-        openNote(args[1], args[2] || getPrimaryVault());
-        break;
-    case 'new':
-    case 'create':
-        if (!args[1]) {
-            console.error('Usage: node obsidian_bridge.js create <note_name> [content]');
-            process.exit(1);
-        }
-        createNote(args[1], args.slice(2).join(' ') || '', getPrimaryVault());
-        break;
-    case 'list':
-    case 'ls':
-        listNotes(args[1] || getPrimaryVault());
-        break;
-    default:
-        console.log(`Unknown command: ${command}`);
-        console.log('Available commands: status, launch, open, create, list');
+    switch (command.toLowerCase()) {
+        case 'status':
+            getStatus();
+            break;
+        case 'launch':
+            launchObsidian(args[1] || getPrimaryVault());
+            break;
+        case 'open':
+            if (!args[1]) {
+                console.error('Usage: node obsidian_bridge.js open <note_name>');
+                process.exit(1);
+            }
+            openNote(args[1], args[2] || getPrimaryVault());
+            break;
+        case 'new':
+        case 'create':
+            if (!args[1]) {
+                console.error('Usage: node obsidian_bridge.js create <note_name> [content]');
+                process.exit(1);
+            }
+            createNote(args[1], args.slice(2).join(' ') || '', getPrimaryVault());
+            break;
+        case 'list':
+        case 'ls':
+            listNotes(args[1] || getPrimaryVault());
+            break;
+        default:
+            console.log(`Unknown command: ${command}`);
+            console.log('Available commands: status, launch, open, create, list');
+    }
 }
 
 module.exports = {
