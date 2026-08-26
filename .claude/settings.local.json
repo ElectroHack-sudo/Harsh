@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm *)",
+      "PowerShell(node -e 'fs.writeFileSync\\(\"build.js\", \"const fs = require\\(\\\\\"fs\\\\\"\\);\\\\n\"\\)')",
+      "PowerShell(node -e \"const fs = require\\('fs'\\); fs.writeFileSync\\('make.js', 'console.log\\(1\\)'\\);\")",
+      "PowerShell(node -e \"require\\('fs'\\).writeFileSync\\('make_page.js', 'const fs = require\\(\\\\\"fs\\\\\"\\);\\\\n'\\)\")",
+      "PowerShell(python --version)",
+      "PowerShell(python -c \"open\\('write_page.py', 'w'\\).write\\('print\\(\\\\\"hello\\\\\"\\)'\\)\")",
+      "PowerShell(node -e 'console.log\\(\"Single quotes work cleanly in PowerShell!\"\\)')",
+      "PowerShell(node build.js)"
+    ]
+  }
+}

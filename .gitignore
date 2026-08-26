@@ -1,0 +1,22 @@
+# Secrets & Environment
+.env
+.env.*
+*.env
+
+# Temporary / Intermediates (BLAST ephemeral storage)
+.tmp/
+tmp/
+temp/
+
+# Node & Python dependencies / caches
+node_modules/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# OS / Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
