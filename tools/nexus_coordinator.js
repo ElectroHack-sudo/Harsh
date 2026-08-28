@@ -13,6 +13,7 @@ const { syncWorkspaceToObsidian, appendToSection, getProjectNotePath } = require
 const { routeTask, checkOmniRouteHealth, getAvailableModels, generateCompletion } = require('./omniroute_client');
 const { provisionDatabase } = require('./database_provisioner');
 const { getStatus: getObsidianStatus, openNote, launchObsidian } = require('./obsidian_bridge');
+const { getAllAgents, findMatchingAgents, getAgentDetails, syncAgencyCatalogToObsidian } = require('./agency_bridge');
 
 async function getFullSystemStatus(cwd = process.cwd()) {
     const projectName = path.basename(cwd);
@@ -20,6 +21,7 @@ async function getFullSystemStatus(cwd = process.cwd()) {
     const omniModels = omniHealth.alive ? await getAvailableModels() : [];
     const gitStatus = getRepoStatus(cwd);
     const obsStatus = getObsidianStatus();
+    const allAgents = getAllAgents();
 
     let claudeVersion = 'Not found';
     try {
@@ -39,6 +41,10 @@ async function getFullSystemStatus(cwd = process.cwd()) {
             version: claudeVersion,
             mcpConfigured: fs.existsSync(path.join(cwd, '.mcp.json')),
             settingsConfigured: fs.existsSync(path.join(cwd, '.claude', 'settings.local.json'))
+        },
+        agency: {
+            totalAgents: allAgents.length,
+            catalogSynced: fs.existsSync(path.join(obsStatus.primaryVault, 'Projects', 'agency_agents.md'))
         },
         obsidian: {
             ...obsStatus,
@@ -62,40 +68,47 @@ function printStatusDashboard(status) {
     const omniIcon = status.omniroute.alive ? '🟢' : '🔴';
     console.log(`${omniIcon} 1. OmniRoute Intelligence Gateway:`);
     console.log(`   - Status:      ${status.omniroute.alive ? 'ONLINE (Healthy)' : 'OFFLINE'}`);
-    console.log(`   - Endpoint:    ${status.omniroute.url || 'http://localhost:20128'}`);
+    console.log(`   - Endpoint:    ${status.omniroute.url || 'http://127.0.0.1:20128'}`);
     console.log(`   - Version:     ${status.omniroute.version || 'unknown'}`);
     console.log(`   - Model Pool:  ${status.omniroute.modelCount} active models (${status.omniroute.sampleModels.join(', ') || 'none'})`);
 
-    // 2. Claude Code
+    // 2. Claude Code & Agency Agents
     const claudeIcon = status.claude.version !== 'Not found' ? '🟢' : '🔴';
     console.log(`\n${claudeIcon} 2. Claude Code Execution Core:`);
     console.log(`   - Version:     ${status.claude.version}`);
     console.log(`   - MCP Bridge:  ${status.claude.mcpConfigured ? 'Configured (.mcp.json)' : 'Missing'}`);
     console.log(`   - Permissions: ${status.claude.settingsConfigured ? 'Configured (.claude/settings.local.json)' : 'Default'}`);
 
-    // 3. Obsidian Knowledge Vault
+    // 3. The Agency (Specialist Agents)
+    const agencyIcon = status.agency.totalAgents > 0 ? '🟢' : '🔴';
+    console.log(`\n${agencyIcon} 3. The Agency Specialist Personas:`);
+    console.log(`   - Specialist Pool: ${status.agency.totalAgents} installed agents across 18 divisions`);
+    console.log(`   - Vault Catalog:   ${status.agency.catalogSynced ? 'Synced (D:\\ISHIDA\\Projects\\agency_agents.md)' : 'Not synced (Run nexus sync)'}`);
+
+    // 4. Obsidian Knowledge Vault
     const obsIcon = status.obsidian.primaryVaultExists ? '🟢' : '🔴';
-    console.log(`\n${obsIcon} 3. Obsidian SSOT Knowledge Vault:`);
+    console.log(`\n${obsIcon} 4. Obsidian SSOT Knowledge Vault:`);
     console.log(`   - Primary Vault: ${status.obsidian.primaryVault}`);
     console.log(`   - Project Note:  ${status.obsidian.currentProjectNote}`);
     console.log(`   - Note Synced:   ${status.obsidian.noteExists ? 'YES' : 'NO (Run nexus sync)'}`);
 
-    // 4. GitHub Remote
+    // 5. GitHub Remote
     const gitIcon = status.github.isRepo ? (status.github.remote ? '🟢' : '🟡') : '🔴';
-    console.log(`\n${gitIcon} 4. GitHub Version Control & Remote:`);
+    console.log(`\n${gitIcon} 5. GitHub Version Control & Remote:`);
     console.log(`   - Local Repo:    ${status.github.isRepo ? `Active (Branch: ${status.github.branch})` : 'Not initialized'}`);
     console.log(`   - Remote URL:    ${status.github.remote || 'None configured'}`);
     console.log(`   - Working Tree:  ${status.github.clean ? 'Clean' : `${status.github.uncommittedChanges.length} uncommitted file(s)`}`);
 
-    // 5. Database Hub
-    console.log(`\n🔵 5. Database Hub Scaffolding:`);
+    // 6. Database Hub
+    console.log(`\n🔵 6. Database Hub Scaffolding:`);
     console.log(`   - SQLite Config: ${status.database.sqliteSchema ? 'Ready (db/schema.sql)' : 'Not scaffolded'}`);
     console.log(`   - Prisma Config: ${status.database.prismaSchema ? 'Ready (prisma/schema.prisma)' : 'Not scaffolded'}`);
 
     console.log(`\n================================================================`);
     console.log(`⚡ Available CLI Commands:`);
     console.log(`   - nexus status                  : Display this ecosystem health dashboard`);
-    console.log(`   - nexus sync [message]          : Sync Obsidian vault note & push to GitHub`);
+    console.log(`   - nexus agent "<query>"         : Match & select from 270+ specialist agent personas`);
+    console.log(`   - nexus sync [message]          : Sync Obsidian vault notes & push to GitHub`);
     console.log(`   - nexus build "<prompt>" [--db] : Route task, scaffold DB, prep Obsidian & Claude`);
     console.log(`   - nexus route "<prompt>"        : Query OmniRoute for task architecture`);
     console.log(`   - nexus obsidian                : Open project note in Obsidian GUI`);
@@ -154,8 +167,11 @@ async function executePipeline(options = {}) {
             databaseType: databaseType || 'Dynamic',
             openInObsidian: options.openObsidian || false
         });
+        // Also sync Agency Catalog
+        syncAgencyCatalogToObsidian();
         results.steps.obsidian = obsResult;
-        console.log(`   Synchronized note to: ${obsResult.notePath}`);
+        console.log(`   Synchronized workspace note to: ${obsResult.notePath}`);
+        console.log(`   Synchronized agency catalog note to: ${path.join(obsResult.vault, 'Projects', 'agency_agents.md')}`);
     }
 
     // Step 5: GitHub Version Control & Remote Push
@@ -189,6 +205,20 @@ if (require.main === module) {
 
     if (command === 'status' || command === 'doctor') {
         getFullSystemStatus().then(printStatusDashboard);
+    } else if (command === 'agent' || command === 'agents' || command === 'find') {
+        const query = args.slice(1).join(' ') || 'frontend architect';
+        console.log(`\n🔍 Searching 270+ Agency Specialist Agents for: "${query}"...\n`);
+        const matches = findMatchingAgents(query, 6);
+        if (matches.length === 0) {
+            console.log('No direct matches found. Try keywords like: frontend, backend, ui, security, architect, database');
+        } else {
+            matches.forEach((m, idx) => {
+                console.log(`[${idx + 1}] 🏷️  ${m.id} (Division: ${m.division.toUpperCase()})`);
+                console.log(`    Title: ${m.title}`);
+                console.log(`    Focus: ${m.description}\n`);
+            });
+            console.log(`💡 To invoke in Claude Code: "Assume persona of ${matches[0].id}" or start with: nexus claude`);
+        }
     } else if (command === 'build' || command === 'create') {
         let db = null;
         const dbIdx = args.indexOf('--db');
@@ -209,15 +239,16 @@ if (require.main === module) {
     } else if (command === 'obsidian' || command === 'obs') {
         const pName = path.basename(process.cwd());
         syncWorkspaceToObsidian({ projectName: pName, openInObsidian: true });
+        syncAgencyCatalogToObsidian();
     } else if (command === 'claude' || command === 'launch') {
         const claudeArgs = args.slice(1);
         const claudeExe = 'C:\\Users\\hmadg\\.local\\bin\\claude.exe';
         const env = {
             ...process.env,
-            ANTHROPIC_BASE_URL: 'http://localhost:20128',
+            ANTHROPIC_BASE_URL: 'http://127.0.0.1:20128',
             ANTHROPIC_AUTH_TOKEN: 'sk-28cd06a63e40d0fa-1d04bb-be07bf06'
         };
-        console.log(`\n🚀 Launching Claude Code connected to OmniRoute proxy (http://localhost:20128)...\n`);
+        console.log(`\n🚀 Launching Claude Code connected to OmniRoute proxy (http://127.0.0.1:20128)...\n`);
         const proc = spawn(claudeExe, claudeArgs, {
             env,
             stdio: 'inherit',
@@ -225,7 +256,7 @@ if (require.main === module) {
         });
         proc.on('exit', (code) => process.exit(code || 0));
     } else {
-        console.log('Usage: nexus [status | claude [args] | sync [message] | build "<prompt>" [--db sqlite|postgres|prisma] | route "<prompt>" | obsidian]');
+        console.log('Usage: nexus [status | agent <query> | claude [args] | sync [message] | build "<prompt>" [--db sqlite|postgres|prisma] | route "<prompt>" | obsidian]');
     }
 }
 

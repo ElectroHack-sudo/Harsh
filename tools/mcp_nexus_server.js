@@ -12,6 +12,7 @@ const { autoSync, getRepoStatus } = require('./github_sync');
 const { syncWorkspaceToObsidian, appendToSection } = require('./obsidian_sync');
 const { provisionDatabase } = require('./database_provisioner');
 const { routeTask, checkOmniRouteHealth, generateCompletion } = require('./omniroute_client');
+const { findMatchingAgents, getAgentDetails, syncAgencyCatalogToObsidian } = require('./agency_bridge');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -102,6 +103,37 @@ const TOOLS = [
             },
             required: ["prompt"]
         }
+    },
+    {
+        name: "nexus_find_agent",
+        description: "Searches the 270+ installed Agency specialist agents (Engineering, Design, Security, Research, etc.) for the best match to a task prompt.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                query: { type: "string", description: "Task description or skill keywords to match" },
+                limit: { type: "number", description: "Maximum number of matching agents to return (default: 5)" }
+            },
+            required: ["query"]
+        }
+    },
+    {
+        name: "nexus_get_agent",
+        description: "Fetches complete instructions, personality, deliverables, and workflow for a specific Agency specialist agent.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                agentId: { type: "string", description: "The agent ID (e.g. engineering-frontend-developer, design-ui-designer)" }
+            },
+            required: ["agentId"]
+        }
+    },
+    {
+        name: "nexus_sync_agency",
+        description: "Syncs full Agency Catalog of 270+ agents across 18 divisions into Obsidian vault (D:\\ISHIDA\\Projects\\agency_agents.md).",
+        inputSchema: {
+            type: "object",
+            properties: {}
+        }
     }
 ];
 
@@ -116,7 +148,7 @@ function handleInitialize(id) {
             },
             serverInfo: {
                 name: "nexus-mcp-server",
-                version: "1.1.0"
+                version: "1.2.0"
             }
         }
     };
@@ -151,6 +183,12 @@ async function handleToolCall(id, name, args) {
             resultData = routeTask(args.taskType, args.prompt);
         } else if (name === "nexus_query_llm") {
             resultData = await generateCompletion(args.prompt, { model: args.model || 'auto/best-coding' });
+        } else if (name === "nexus_find_agent") {
+            resultData = findMatchingAgents(args.query, args.limit || 5);
+        } else if (name === "nexus_get_agent") {
+            resultData = getAgentDetails(args.agentId);
+        } else if (name === "nexus_sync_agency") {
+            resultData = syncAgencyCatalogToObsidian();
         } else {
             return {
                 jsonrpc: "2.0",
