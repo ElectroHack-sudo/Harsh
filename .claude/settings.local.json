@@ -10,5 +10,23 @@
       "PowerShell(node -e 'console.log\\(\"Single quotes work cleanly in PowerShell!\"\\)')",
       "PowerShell(node build.js)"
     ]
-  }
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./headroom.CMD wrap selfheal --marker headroom-wrap-selfheal",
+            "timeout": 10
+          }
+        ]
+      }
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "nexus",
+    "headroom"
+  ]
 }

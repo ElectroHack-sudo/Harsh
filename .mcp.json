@@ -4,9 +4,20 @@
       "command": "node",
       "args": ["tools/mcp_nexus_server.js"],
       "env": {
-        "OMNIROUTE_URL": "http://localhost:8080",
+        "OMNIROUTE_URL": "http://localhost:20128",
+        "OMNIROUTE_API_KEY": "sk-28cd06a63e40d0fa-1d04bb-be07bf06",
         "OBSIDIAN_VAULT": "D:\\ISHIDA"
+      }
+    },
+    "headroom": {
+      "command": "headroom",
+      "args": ["serve-mcp"],
+      "env": {
+        "HEADROOM_PORT": "8787",
+        "OPENAI_BASE_URL": "http://localhost:20128/v1",
+        "OPENAI_API_KEY": "sk-28cd06a63e40d0fa-1d04bb-be07bf06"
       }
     }
   }
 }
+

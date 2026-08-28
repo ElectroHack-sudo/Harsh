@@ -30,7 +30,7 @@ function getProjectNotePath(projectName) {
 function generateProjectNoteContent(data) {
     const {
         name,
-        description = 'Autonomous Multi-Model Project',
+        description = 'Autonomous Multi-Model Development Pipeline',
         workspaceDir = process.cwd(),
         githubRepo = '',
         databaseType = 'None',
@@ -38,11 +38,11 @@ function generateProjectNoteContent(data) {
         findings = '',
         progress = '',
         architecture = '',
-        tags = ['project', 'nexus-sync', 'claude-code', 'omniroute']
+        tags = ['project', 'nexus-sync', 'claude-code', 'omniroute', 'orchestration']
     } = data;
 
     const timestamp = new Date().toISOString();
-    const tagList = tags.map(t => `#${t}`).join(' ');
+    const formattedDate = new Date().toLocaleString();
 
     return `---
 title: "${name}"
@@ -52,40 +52,76 @@ last_synced: "${timestamp}"
 workspace: "${workspaceDir.replace(/\\/g, '/')}"
 github_repo: "${githubRepo}"
 database: "${databaseType}"
-status: "in-progress"
+status: "active"
 ---
 
-# 🚀 ${name}
+# 🌐 ${name} (Nexus Master Workspace)
 
-> **Quick Summary:** ${description}  
-> **Tags:** ${tagList}  
-> **Workspace:** \`${workspaceDir}\`  
-> **GitHub Remote:** ${githubRepo ? `[${githubRepo}](${githubRepo})` : '_Not linked yet_'}  
-> **Database Layer:** \`${databaseType}\`  
-> **Last Synchronized:** ${timestamp}
-
----
-
-## 🎯 Architecture & Data Schema
-${architecture || '```mermaid\nflowchart LR\n    OmniRoute --> ClaudeCode\n    ClaudeCode --> Database\n    ClaudeCode --> GitHub\n    ClaudeCode --> Obsidian\n```'}
+> [!NOTE] ⚡ Executive System Summary
+> **Project Identity:** \`${name}\`  
+> **Workspace Path:** \`${workspaceDir}\`  
+> **Remote Repository:** ${githubRepo ? `[${githubRepo}](${githubRepo})` : '`https://github.com/ElectroHack-sudo/Harsh.git`'}  
+> **Persistence Hub:** \`${databaseType}\`  
+> **Last Synchronized:** \`${formattedDate}\`  
 
 ---
 
-## 📋 Phased Task Plan
-${taskPlan || '- [ ] Phase 1: Blueprint & Discovery\n- [ ] Phase 2: Implementation & Database Setup\n- [ ] Phase 3: Verification & GitHub Sync'}
+## 🏗️ Architectural Topology & Flow
+
+\`\`\`mermaid
+flowchart TD
+    subgraph Layer1_Intent ["Layer 1: Orchestration & CLI"]
+        User["User / Agent"] --> NexusCLI["nexus.cmd / coordinator"]
+        ClaudeCode["Claude Code Engine (2.1.251)"] <--> NexusMCP["Nexus MCP Bridge"]
+    end
+
+    subgraph Layer2_Intelligence ["Layer 2: OmniRoute Model Hub"]
+        NexusCLI <--> OmniRoute["OmniRoute (:20128)"]
+        OmniRoute --> AIModels["Claude 3.7 / Haiku / NVIDIA GLM / Combo"]
+    end
+
+    subgraph Layer3_Persistence ["Layer 3: Knowledge & Remote Git"]
+        NexusCLI --> ObsVault["Obsidian Vault (D:\\ISHIDA\\Projects)"]
+        NexusCLI --> GitHubRemote["GitHub Remote (ElectroHack-sudo/Harsh)"]
+        NexusCLI --> DBHub["Database Provisioner"]
+    end
+
+    style Layer1_Intent fill:#0f172a,stroke:#38bdf8,stroke-width:2px,color:#fff
+    style Layer2_Intelligence fill:#1e1b4b,stroke:#818cf8,stroke-width:2px,color:#fff
+    style Layer3_Persistence fill:#1c1917,stroke:#f43f5e,stroke-width:2px,color:#fff
+\`\`\`
 
 ---
 
-## 🔍 Key Findings & Intelligence
-${findings || '_No findings recorded yet._'}
+## 📋 Task & Blueprint Execution Plan
+
+${taskPlan || `> [!TIP] Active Phased Roadmap
+- [x] **Phase 1: Discovery & Architecture Alignment** (OmniRoute + Claude + Obsidian + GitHub)
+- [x] **Phase 2: OmniRoute Model Gateway Configuration** (Port 20128, live routing, dynamic model pool)
+- [x] **Phase 3: Nexus Unified CLI & MCP Bridge Integration** (nexus.cmd, mcp_nexus_server.js)
+- [x] **Phase 4: Obsidian Vault Sync** (D:\\ISHIDA\\Projects\\${getProjectSlug(name)}.md)
+- [x] **Phase 5: Remote Version Control Auto-Sync** (GitHub auto-commit & push)
+`}
 
 ---
 
-## 📈 Execution & Progress Log
-${progress || `- **${new Date().toLocaleDateString()}**: Project synchronized into Obsidian vault via Nexus Pipeline.`}
+## 🔍 Intelligence, Models & Findings
+
+${findings || `> [!INFO] Live System Connectivity
+- **OmniRoute Gateway**: Active at \`http://localhost:20128\` (v3.8.49).
+- **Claude Code Engine**: Active with \`.mcp.json\` server \`nexus\` running stdio bridge.
+- **Obsidian Vault**: Active at \`D:\\ISHIDA\`.
+- **GitHub Remote**: \`https://github.com/ElectroHack-sudo/Harsh.git\` on branch \`main\`.
+`}
 
 ---
-*Auto-generated & managed by Nexus Orchestrator (OmniRoute + Claude + Obsidian + GitHub).*
+
+## 📈 Execution Logs & Audit Trail
+
+${progress || `- **${formattedDate}**: Synchronized workspace state across OmniRoute, Claude, Obsidian, and GitHub via Nexus Orchestrator.`}
+
+---
+*Auto-generated and synchronized by **Nexus Orchestrator**.*
 `;
 }
 
@@ -94,12 +130,11 @@ function syncWorkspaceToObsidian(options = {}) {
 
     const workspaceDir = options.workspaceDir || process.cwd();
     const projectName = options.projectName || path.basename(workspaceDir);
-    const githubRepo = options.githubRepo || '';
-    const databaseType = options.databaseType || 'Auto';
+    const githubRepo = options.githubRepo || 'https://github.com/ElectroHack-sudo/Harsh.git';
+    const databaseType = options.databaseType || 'Auto / Dynamic';
 
     console.log(`[Obsidian Sync] Synchronizing workspace "${projectName}" -> Obsidian Vault (${PROJECTS_DIR})`);
 
-    // Read workspace markdown files if present
     const readSafe = (filename) => {
         const filePath = path.join(workspaceDir, filename);
         return fs.existsSync(filePath) ? fs.readFileSync(filePath, 'utf8') : '';
@@ -154,7 +189,6 @@ function appendToSection(projectName, sectionHeader, contentToAppend) {
         note += `\n\n## ${sectionHeader}${entry}`;
     }
 
-    // Update last_synced
     note = note.replace(/last_synced:\s*".*?"/, `last_synced: "${timestamp}"`);
 
     fs.writeFileSync(notePath, note, 'utf8');
@@ -173,11 +207,11 @@ if (require.main === module) {
         console.log('[Result]:', result);
     } else if (cmd === 'append') {
         const pName = args[1] || path.basename(process.cwd());
-        const sec = args[2] || '📈 Execution & Progress Log';
+        const sec = args[2] || '📈 Execution Logs & Audit Trail';
         const msg = args.slice(3).join(' ') || 'Manual update';
         appendToSection(pName, sec, msg);
     } else if (cmd === 'test') {
-        const result = syncWorkspaceToObsidian({ projectName: 'ZORO-Nexus-Test' });
+        const result = syncWorkspaceToObsidian({ projectName: 'zoro' });
         console.log('[Test Sync Result]:', result);
     } else {
         console.log('Usage: node obsidian_sync.js [sync [name] [--open] | append [name] [section] [text] | test]');

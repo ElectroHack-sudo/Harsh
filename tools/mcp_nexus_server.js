@@ -7,11 +7,11 @@
  */
 
 const readline = require('readline');
-const { executePipeline } = require('./nexus_coordinator');
+const { executePipeline, getFullSystemStatus } = require('./nexus_coordinator');
 const { autoSync, getRepoStatus } = require('./github_sync');
 const { syncWorkspaceToObsidian, appendToSection } = require('./obsidian_sync');
 const { provisionDatabase } = require('./database_provisioner');
-const { routeTask, checkOmniRouteHealth } = require('./omniroute_client');
+const { routeTask, checkOmniRouteHealth, generateCompletion } = require('./omniroute_client');
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -24,6 +24,14 @@ function log(msg) {
 }
 
 const TOOLS = [
+    {
+        name: "nexus_status",
+        description: "Returns the real-time health and connection status of OmniRoute, Claude Code, Obsidian, GitHub, and Database Hub.",
+        inputSchema: {
+            type: "object",
+            properties: {}
+        }
+    },
     {
         name: "nexus_full_pipeline",
         description: "Executes the unified 5-step pipeline: OmniRoute routing, Database scaffolding, Claude execution prep, Obsidian vault sync, and GitHub auto-push.",
@@ -82,6 +90,18 @@ const TOOLS = [
             },
             required: ["taskType", "prompt"]
         }
+    },
+    {
+        name: "nexus_query_llm",
+        description: "Queries an LLM through OmniRoute model router (e.g. auto/best-coding, claude-haiku-4.5, etc.).",
+        inputSchema: {
+            type: "object",
+            properties: {
+                prompt: { type: "string", description: "Prompt to send to OmniRoute" },
+                model: { type: "string", description: "Model name or combo alias (default: auto/best-coding)" }
+            },
+            required: ["prompt"]
+        }
     }
 ];
 
@@ -96,7 +116,7 @@ function handleInitialize(id) {
             },
             serverInfo: {
                 name: "nexus-mcp-server",
-                version: "1.0.0"
+                version: "1.1.0"
             }
         }
     };
@@ -117,7 +137,9 @@ async function handleToolCall(id, name, args) {
     try {
         let resultData = null;
 
-        if (name === "nexus_full_pipeline") {
+        if (name === "nexus_status") {
+            resultData = await getFullSystemStatus();
+        } else if (name === "nexus_full_pipeline") {
             resultData = await executePipeline(args || {});
         } else if (name === "nexus_sync_github") {
             resultData = autoSync(args || {});
@@ -127,6 +149,8 @@ async function handleToolCall(id, name, args) {
             resultData = provisionDatabase(args || {});
         } else if (name === "nexus_omniroute_route") {
             resultData = routeTask(args.taskType, args.prompt);
+        } else if (name === "nexus_query_llm") {
+            resultData = await generateCompletion(args.prompt, { model: args.model || 'auto/best-coding' });
         } else {
             return {
                 jsonrpc: "2.0",
