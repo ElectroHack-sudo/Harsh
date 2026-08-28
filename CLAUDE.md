@@ -9,6 +9,7 @@ Welcome to the **Nexus Unified Pipeline** workspace. This repository integrates 
 | Command | Purpose |
 | :--- | :--- |
 | `nexus status` | Displays real-time status of OmniRoute, Claude, Obsidian, GitHub, and Database. |
+| `nexus claude [args]` | Launches Claude Code connected directly to OmniRoute proxy. |
 | `nexus sync "<message>"` | Synchronizes Obsidian project note (`D:\ISHIDA\Projects\zoro.md`) and pushes to GitHub. |
 | `nexus build "<prompt>"` | Executes the 5-phase pipeline: Route -> DB -> Claude -> Obsidian -> GitHub. |
 | `nexus route "<prompt>"` | Queries OmniRoute intelligence router for recommended architecture & model tier. |

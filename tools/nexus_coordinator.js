@@ -209,8 +209,23 @@ if (require.main === module) {
     } else if (command === 'obsidian' || command === 'obs') {
         const pName = path.basename(process.cwd());
         syncWorkspaceToObsidian({ projectName: pName, openInObsidian: true });
+    } else if (command === 'claude' || command === 'launch') {
+        const claudeArgs = args.slice(1);
+        const claudeExe = 'C:\\Users\\hmadg\\.local\\bin\\claude.exe';
+        const env = {
+            ...process.env,
+            ANTHROPIC_BASE_URL: 'http://localhost:20128',
+            ANTHROPIC_AUTH_TOKEN: 'sk-28cd06a63e40d0fa-1d04bb-be07bf06'
+        };
+        console.log(`\n🚀 Launching Claude Code connected to OmniRoute proxy (http://localhost:20128)...\n`);
+        const proc = spawn(claudeExe, claudeArgs, {
+            env,
+            stdio: 'inherit',
+            shell: true
+        });
+        proc.on('exit', (code) => process.exit(code || 0));
     } else {
-        console.log('Usage: nexus [status | sync [message] | build "<prompt>" [--db sqlite|postgres|prisma] | route "<prompt>" | obsidian]');
+        console.log('Usage: nexus [status | claude [args] | sync [message] | build "<prompt>" [--db sqlite|postgres|prisma] | route "<prompt>" | obsidian]');
     }
 }
 
