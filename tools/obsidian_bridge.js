@@ -86,7 +86,7 @@ function listNotes(vaultPath = getPrimaryVault()) {
 
 function getStatus() {
     const vaults = getObsidianVaults();
-    const status = {
+    return {
         shortcutPath: LNK_PATH,
         shortcutExists: fs.existsSync(LNK_PATH),
         executablePath: EXE_DEFAULT,
@@ -95,9 +95,6 @@ function getStatus() {
         primaryVault: getPrimaryVault(),
         primaryVaultExists: fs.existsSync(getPrimaryVault())
     };
-    console.log('[Obsidian Bridge Status]');
-    console.log(JSON.stringify(status, null, 2));
-    return status;
 }
 
 // CLI handler
