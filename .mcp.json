@@ -4,7 +4,7 @@
       "command": "node",
       "args": ["tools/mcp_nexus_server.js"],
       "env": {
-        "OMNIROUTE_URL": "http://localhost:20128",
+        "OMNIROUTE_URL": "http://127.0.0.1:20128",
         "OMNIROUTE_API_KEY": "sk-28cd06a63e40d0fa-1d04bb-be07bf06",
         "OBSIDIAN_VAULT": "D:\\ISHIDA"
       }

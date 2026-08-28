@@ -36,7 +36,17 @@ Claude Code has direct access to the **Nexus MCP Server** via `.mcp.json`:
 - **Obsidian Vault**: `D:\ISHIDA\Projects\<project-slug>.md`
 - **Git Remote**: `https://github.com/ElectroHack-sudo/Harsh.git` (`main`)
 - **OmniRoute Daemon**: `http://localhost:20128` (`sk-28cd06a63e40d0fa-1d04bb-be07bf06`)
+- **Agency Agents Hub**: `~/.claude/agents/` (270+ specialist agent personas)
 - **Git Ignore**: Strictly protect `.env`, `node_modules/`, `.tmp/`, build artifacts.
+
+---
+
+## 🎭 The Agency — Specialist Agent Activation
+
+All 270+ Agency Agents are installed in `~/.claude/agents/`. In every session:
+1. **Auto-Select Specialist**: Match the prompt's domain against relevant Agency Agents (e.g. `engineering-frontend-developer`, `engineering-software-architect`, `design-ui-designer`, `engineering-sre`, `engineering-code-reviewer`).
+2. **Execute with Domain Mastery**: Strictly apply the deliverables, architecture standards, and workflows from the matching agent file.
+3. **Explicit Call**: When prompted (e.g., *"Activate Frontend Developer mode"* or *"As Senior Developer..."*), assume that exact persona immediately.
 
 ---
 

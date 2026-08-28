@@ -8,7 +8,7 @@
 const http = require('http');
 const https = require('https');
 
-const DEFAULT_URL = process.env.OMNIROUTE_URL || 'http://localhost:20128';
+const DEFAULT_URL = process.env.OMNIROUTE_URL || 'http://127.0.0.1:20128';
 const API_KEY = process.env.OMNIROUTE_API_KEY || process.env.OPENAI_API_KEY || 'sk-28cd06a63e40d0fa-1d04bb-be07bf06';
 
 /**
