@@ -243,12 +243,32 @@ if (require.main === module) {
     } else if (command === 'claude' || command === 'launch') {
         const claudeArgs = args.slice(1);
         const claudeExe = 'C:\\Users\\hmadg\\.local\\bin\\claude.exe';
+        
+        // Ensure OmniRoute daemon is alive
+        const omniHealth = await checkOmniRouteHealth();
+        if (!omniHealth.alive) {
+            console.log(`⚡ [OmniRoute] Starting background daemon...`);
+            try {
+                spawn('C:\\Users\\hmadg\\AppData\\Local\\pnpm\\bin\\omniroute.cmd', ['serve'], {
+                    detached: true,
+                    stdio: 'ignore',
+                    shell: true
+                }).unref();
+                await new Promise(resolve => setTimeout(resolve, 3000));
+            } catch (e) {}
+        }
+
+        const omniKey = process.env.OMNIROUTE_API_KEY || 'sk-28cd06a63e40d0fa-1d04bb-be07bf06';
         const env = {
             ...process.env,
             ANTHROPIC_BASE_URL: 'http://127.0.0.1:20128',
-            ANTHROPIC_AUTH_TOKEN: 'sk-28cd06a63e40d0fa-1d04bb-be07bf06'
+            ANTHROPIC_API_KEY: omniKey,
+            ANTHROPIC_AUTH_TOKEN: omniKey,
+            ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'auto/best-coding',
+            ANTHROPIC_DEFAULT_MODEL: process.env.ANTHROPIC_MODEL || 'auto/best-coding'
         };
-        console.log(`\n🚀 Launching Claude Code connected to OmniRoute proxy (http://127.0.0.1:20128)...\n`);
+        console.log(`\n🚀 Launching Claude Code connected to OmniRoute proxy (http://127.0.0.1:20128)...`);
+        console.log(`🔑 Key & Base URL mapped to bypass Anthropic billing.\n`);
         const proc = spawn(claudeExe, claudeArgs, {
             env,
             stdio: 'inherit',
