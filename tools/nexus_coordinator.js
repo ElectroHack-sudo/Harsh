@@ -38,7 +38,9 @@ async function getFullSystemStatus(cwd = process.cwd()) {
 
     let claudeVersion = 'Not found';
     try {
-        const cRes = spawnSync('claude', ['--version'], { encoding: 'utf8', shell: true });
+        const claudeBin = 'C:\\Users\\hmadg\\.local\\bin\\claude.exe';
+        const target = fs.existsSync(claudeBin) ? claudeBin : 'claude';
+        const cRes = spawnSync(target, ['--version'], { encoding: 'utf8', shell: false });
         if (cRes.status === 0) claudeVersion = (cRes.stdout || '').trim();
     } catch (e) {}
 
@@ -315,7 +317,7 @@ if (require.main === module) {
                         stdio: 'ignore',
                         shell: true
                     }).unref();
-                    await new Promise(resolve => setTimeout(resolve, 3000));
+                    await new Promise(resolve => setTimeout(resolve, 2000));
                 } catch (e) {}
             }
 
@@ -335,7 +337,7 @@ if (require.main === module) {
             const proc = spawn(claudeExe, claudeArgs, {
                 env,
                 stdio: 'inherit',
-                shell: true
+                shell: false
             });
             proc.on('exit', (code) => process.exit(code || 0));
         })();
