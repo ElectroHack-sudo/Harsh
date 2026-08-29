@@ -249,6 +249,24 @@ flowchart TD
     };
 }
 
+function syncAgencyAgentsToClaude(targetDir = path.join(__dirname, '..', '.claude', 'agents')) {
+    const agents = getAllAgents();
+    if (!fs.existsSync(targetDir)) {
+        fs.mkdirSync(targetDir, { recursive: true });
+    }
+
+    let syncedCount = 0;
+    for (const agent of agents) {
+        if (agent.filePath && fs.existsSync(agent.filePath)) {
+            const destFile = path.join(targetDir, `${agent.id}.md`);
+            fs.copyFileSync(agent.filePath, destFile);
+            syncedCount++;
+        }
+    }
+    console.log(`[Agency Bridge] Synced ${syncedCount} specialist agent files -> ${targetDir}`);
+    return { success: true, count: syncedCount, targetDir };
+}
+
 if (require.main === module) {
     const args = process.argv.slice(2);
     const cmd = args[0] || 'list';
@@ -276,5 +294,6 @@ module.exports = {
     getAllAgents,
     findMatchingAgents,
     getAgentDetails,
-    syncAgencyCatalogToObsidian
+    syncAgencyCatalogToObsidian,
+    syncAgencyAgentsToClaude
 };

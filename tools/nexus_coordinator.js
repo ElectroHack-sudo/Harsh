@@ -24,7 +24,7 @@ const { syncWorkspaceToObsidian, appendToSection, getProjectNotePath } = require
 const { routeTask, checkOmniRouteHealth, getAvailableModels, generateCompletion } = require('./omniroute_client');
 const { provisionDatabase } = require('./database_provisioner');
 const { getStatus: getObsidianStatus, openNote, launchObsidian } = require('./obsidian_bridge');
-const { getAllAgents, findMatchingAgents, getAgentDetails, syncAgencyCatalogToObsidian } = require('./agency_bridge');
+const { getAllAgents, findMatchingAgents, getAgentDetails, syncAgencyCatalogToObsidian, syncAgencyAgentsToClaude } = require('./agency_bridge');
 
 // ─── System Status ────────────────────────────────────────────────────────────
 
@@ -185,10 +185,12 @@ async function executePipeline(options = {}) {
             databaseType: databaseType || 'Dynamic',
             openInObsidian: options.openObsidian || false
         });
-        // Also sync Agency Catalog
+        // Also sync Agency Catalog to Obsidian and Claude Code agent hub
         syncAgencyCatalogToObsidian();
+        syncAgencyAgentsToClaude();
         results.steps.obsidian = obsResult;
         console.log(`   Synchronized workspace note to: ${obsResult.notePath}`);
+        console.log(`   Synchronized 270+ Agency Agents directly into Claude Code core (.claude/agents)`);
     }
 
     // Step 5: GitHub Version Control & Remote Push
