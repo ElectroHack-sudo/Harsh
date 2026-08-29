@@ -14,7 +14,8 @@
       "Bash(git *)",
       "Bash(npm *)",
       "Bash(nexus *)",
-      "Bash(omniroute *)"
+      "Bash(omniroute *)",
+      "mcp__nexus__nexus_omniroute_route"
     ]
   },
   "enabledMcpjsonServers": [
