@@ -1,9 +1,20 @@
 /**
  * Nexus Master Coordinator (Layer 2 Decision & Orchestration Router)
- * 
- * Unifies OmniRoute + Claude Code + Obsidian + GitHub + Database
+ *
+ * Unifies OmniRoute + Claude Code + Obsidian + GitHub + Database + Agency Agents
  * into an automated, zero-friction project build and synchronization pipeline.
+ *
+ * Auth model: ONLY ANTHROPIC_API_KEY is set when launching Claude Code.
+ * Setting both ANTHROPIC_API_KEY and ANTHROPIC_AUTH_TOKEN simultaneously causes
+ * Claude Code to warn and potentially fail auth — we never set ANTHROPIC_AUTH_TOKEN.
  */
+
+// Load .env from workspace root before any module reads process.env
+try {
+    require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+} catch (e) {
+    // dotenv is optional — silently continue if not installed
+}
 
 const fs = require('fs');
 const path = require('path');
@@ -14,6 +25,8 @@ const { routeTask, checkOmniRouteHealth, getAvailableModels, generateCompletion 
 const { provisionDatabase } = require('./database_provisioner');
 const { getStatus: getObsidianStatus, openNote, launchObsidian } = require('./obsidian_bridge');
 const { getAllAgents, findMatchingAgents, getAgentDetails, syncAgencyCatalogToObsidian } = require('./agency_bridge');
+
+// ─── System Status ────────────────────────────────────────────────────────────
 
 async function getFullSystemStatus(cwd = process.cwd()) {
     const projectName = path.basename(cwd);
@@ -59,6 +72,8 @@ async function getFullSystemStatus(cwd = process.cwd()) {
     };
 }
 
+// ─── Status Dashboard Printer ─────────────────────────────────────────────────
+
 function printStatusDashboard(status) {
     console.log(`\n================================================================`);
     console.log(`🌐 [NEXUS UNIFIED ECOSYSTEM STATUS] Workspace: ${status.project}`);
@@ -82,15 +97,15 @@ function printStatusDashboard(status) {
     // 3. The Agency (Specialist Agents)
     const agencyIcon = status.agency.totalAgents > 0 ? '🟢' : '🔴';
     console.log(`\n${agencyIcon} 3. The Agency Specialist Personas:`);
-    console.log(`   - Specialist Pool: ${status.agency.totalAgents} installed agents across 18 divisions`);
-    console.log(`   - Vault Catalog:   ${status.agency.catalogSynced ? 'Synced (D:\\ISHIDA\\Projects\\agency_agents.md)' : 'Not synced (Run nexus sync)'}`);
+    console.log(`   - Specialist Pool: ${status.agency.totalAgents} installed agents`);
+    console.log(`   - Vault Catalog:   ${status.agency.catalogSynced ? 'Synced → D:\\ISHIDA\\Projects\\agency_agents.md' : 'Not synced (run: nexus sync)'}`);
 
     // 4. Obsidian Knowledge Vault
     const obsIcon = status.obsidian.primaryVaultExists ? '🟢' : '🔴';
     console.log(`\n${obsIcon} 4. Obsidian SSOT Knowledge Vault:`);
     console.log(`   - Primary Vault: ${status.obsidian.primaryVault}`);
     console.log(`   - Project Note:  ${status.obsidian.currentProjectNote}`);
-    console.log(`   - Note Synced:   ${status.obsidian.noteExists ? 'YES' : 'NO (Run nexus sync)'}`);
+    console.log(`   - Note Synced:   ${status.obsidian.noteExists ? 'YES' : 'NO (run: nexus sync)'}`);
 
     // 5. GitHub Remote
     const gitIcon = status.github.isRepo ? (status.github.remote ? '🟢' : '🟡') : '🔴';
@@ -106,14 +121,17 @@ function printStatusDashboard(status) {
 
     console.log(`\n================================================================`);
     console.log(`⚡ Available CLI Commands:`);
-    console.log(`   - nexus status                  : Display this ecosystem health dashboard`);
-    console.log(`   - nexus agent "<query>"         : Match & select from 270+ specialist agent personas`);
-    console.log(`   - nexus sync [message]          : Sync Obsidian vault notes & push to GitHub`);
-    console.log(`   - nexus build "<prompt>" [--db] : Route task, scaffold DB, prep Obsidian & Claude`);
-    console.log(`   - nexus route "<prompt>"        : Query OmniRoute for task architecture`);
-    console.log(`   - nexus obsidian                : Open project note in Obsidian GUI`);
+    console.log(`   nexus status                  → Ecosystem health dashboard`);
+    console.log(`   nexus agent "<query>"         → Match from 270+ specialist agent personas`);
+    console.log(`   nexus claude [args]           → Launch Claude Code via OmniRoute proxy`);
+    console.log(`   nexus sync [message]          → Sync Obsidian + push to GitHub`);
+    console.log(`   nexus build "<prompt>" [--db] → Full 5-step pipeline`);
+    console.log(`   nexus route "<prompt>"        → Query OmniRoute for model strategy`);
+    console.log(`   nexus obsidian                → Open project note in Obsidian`);
     console.log(`================================================================\n`);
 }
+
+// ─── Full Pipeline ────────────────────────────────────────────────────────────
 
 async function executePipeline(options = {}) {
     const cwd = options.cwd || process.cwd();
@@ -171,7 +189,6 @@ async function executePipeline(options = {}) {
         syncAgencyCatalogToObsidian();
         results.steps.obsidian = obsResult;
         console.log(`   Synchronized workspace note to: ${obsResult.notePath}`);
-        console.log(`   Synchronized agency catalog note to: ${path.join(obsResult.vault, 'Projects', 'agency_agents.md')}`);
     }
 
     // Step 5: GitHub Version Control & Remote Push
@@ -198,16 +215,23 @@ async function executePipeline(options = {}) {
     return results;
 }
 
-// CLI entrypoint
+// ─── CLI Entrypoint ───────────────────────────────────────────────────────────
+
 if (require.main === module) {
     const args = process.argv.slice(2);
     const command = (args[0] || 'status').toLowerCase();
 
     if (command === 'status' || command === 'doctor') {
-        getFullSystemStatus().then(printStatusDashboard);
+        // ── nexus status ──────────────────────────────────────────────────────
+        getFullSystemStatus().then(printStatusDashboard).catch(err => {
+            console.error('[Nexus] Status error:', err.message);
+            process.exit(1);
+        });
+
     } else if (command === 'agent' || command === 'agents' || command === 'find') {
+        // ── nexus agent "<query>" ─────────────────────────────────────────────
         const query = args.slice(1).join(' ') || 'frontend architect';
-        console.log(`\n🔍 Searching 270+ Agency Specialist Agents for: "${query}"...\n`);
+        console.log(`\n🔍 Searching Agency Specialist Agents for: "${query}"...\n`);
         const matches = findMatchingAgents(query, 6);
         if (matches.length === 0) {
             console.log('No direct matches found. Try keywords like: frontend, backend, ui, security, architect, database');
@@ -217,66 +241,106 @@ if (require.main === module) {
                 console.log(`    Title: ${m.title}`);
                 console.log(`    Focus: ${m.description}\n`);
             });
-            console.log(`💡 To invoke in Claude Code: "Assume persona of ${matches[0].id}" or start with: nexus claude`);
+            console.log(`💡 Invoke in Claude Code: "Assume persona of ${matches[0].id}"`);
         }
+
     } else if (command === 'build' || command === 'create') {
-        let db = null;
-        const dbIdx = args.indexOf('--db');
-        if (dbIdx !== -1 && args[dbIdx + 1]) {
-            db = args[dbIdx + 1];
-            args.splice(dbIdx, 2);
-        }
-        const openObs = args.includes('--open');
-        const intent = args.slice(1).filter(a => a !== '--open').join(' ') || 'Autonomous task build';
-        executePipeline({ intent, database: db, openObsidian: openObs });
+        // ── nexus build "<prompt>" [--db <type>] ──────────────────────────────
+        (async () => {
+            let db = null;
+            const dbIdx = args.indexOf('--db');
+            if (dbIdx !== -1 && args[dbIdx + 1]) {
+                db = args[dbIdx + 1];
+                args.splice(dbIdx, 2);
+            }
+            const openObs = args.includes('--open');
+            const intent = args.slice(1).filter(a => a !== '--open').join(' ') || 'Autonomous task build';
+            try {
+                await executePipeline({ intent, database: db, openObsidian: openObs });
+            } catch (err) {
+                console.error('[Nexus Build] Pipeline error:', err.message);
+                process.exit(1);
+            }
+        })();
+
     } else if (command === 'sync') {
-        const msg = args.slice(1).join(' ') || 'Manual workspace sync';
-        executePipeline({ intent: msg, commitMessage: msg });
+        // ── nexus sync [message] ──────────────────────────────────────────────
+        (async () => {
+            const msg = args.slice(1).join(' ') || 'Manual workspace sync';
+            try {
+                await executePipeline({ intent: msg, commitMessage: msg });
+            } catch (err) {
+                console.error('[Nexus Sync] Pipeline error:', err.message);
+                process.exit(1);
+            }
+        })();
+
     } else if (command === 'route') {
+        // ── nexus route "<prompt>" ────────────────────────────────────────────
         const prompt = args.slice(1).join(' ') || 'Decompose fullstack app architecture';
         const plan = routeTask('architecture', prompt);
         console.log('\n[OmniRoute Strategy Plan]:\n', JSON.stringify(plan, null, 2));
-    } else if (command === 'obsidian' || command === 'obs') {
-        const pName = path.basename(process.cwd());
-        syncWorkspaceToObsidian({ projectName: pName, openInObsidian: true });
-        syncAgencyCatalogToObsidian();
-    } else if (command === 'claude' || command === 'launch') {
-        const claudeArgs = args.slice(1);
-        const claudeExe = 'C:\\Users\\hmadg\\.local\\bin\\claude.exe';
-        
-        // Ensure OmniRoute daemon is alive
-        const omniHealth = await checkOmniRouteHealth();
-        if (!omniHealth.alive) {
-            console.log(`⚡ [OmniRoute] Starting background daemon...`);
-            try {
-                spawn('C:\\Users\\hmadg\\AppData\\Local\\pnpm\\bin\\omniroute.cmd', ['serve'], {
-                    detached: true,
-                    stdio: 'ignore',
-                    shell: true
-                }).unref();
-                await new Promise(resolve => setTimeout(resolve, 3000));
-            } catch (e) {}
-        }
 
-        const omniKey = process.env.OMNIROUTE_API_KEY || 'sk-28cd06a63e40d0fa-1d04bb-be07bf06';
-        const env = {
-            ...process.env,
-            ANTHROPIC_BASE_URL: 'http://127.0.0.1:20128',
-            ANTHROPIC_API_KEY: omniKey,
-            ANTHROPIC_AUTH_TOKEN: omniKey,
-            ANTHROPIC_MODEL: process.env.ANTHROPIC_MODEL || 'auto/best-coding',
-            ANTHROPIC_DEFAULT_MODEL: process.env.ANTHROPIC_MODEL || 'auto/best-coding'
-        };
-        console.log(`\n🚀 Launching Claude Code connected to OmniRoute proxy (http://127.0.0.1:20128)...`);
-        console.log(`🔑 Key & Base URL mapped to bypass Anthropic billing.\n`);
-        const proc = spawn(claudeExe, claudeArgs, {
-            env,
-            stdio: 'inherit',
-            shell: true
-        });
-        proc.on('exit', (code) => process.exit(code || 0));
+    } else if (command === 'obsidian' || command === 'obs') {
+        // ── nexus obsidian ────────────────────────────────────────────────────
+        (async () => {
+            const pName = path.basename(process.cwd());
+            try {
+                syncWorkspaceToObsidian({ projectName: pName, openInObsidian: true });
+                syncAgencyCatalogToObsidian();
+            } catch (err) {
+                console.error('[Nexus Obsidian] Sync error:', err.message);
+                process.exit(1);
+            }
+        })();
+
+    } else if (command === 'claude' || command === 'launch') {
+        // ── nexus claude [args] ───────────────────────────────────────────────
+        // IMPORTANT: Only ANTHROPIC_API_KEY is set. Setting ANTHROPIC_AUTH_TOKEN
+        // simultaneously causes Claude Code's auth conflict warning and may break
+        // routing through the OmniRoute proxy.
+        (async () => {
+            const claudeArgs = args.slice(1);
+            const claudeExe = 'C:\\Users\\hmadg\\.local\\bin\\claude.exe';
+
+            // Ensure OmniRoute daemon is alive; auto-start if offline
+            const omniHealth = await checkOmniRouteHealth();
+            if (!omniHealth.alive) {
+                console.log(`⚡ [OmniRoute] Starting background daemon...`);
+                try {
+                    spawn('C:\\Users\\hmadg\\AppData\\Local\\pnpm\\bin\\omniroute.cmd', ['serve'], {
+                        detached: true,
+                        stdio: 'ignore',
+                        shell: true
+                    }).unref();
+                    await new Promise(resolve => setTimeout(resolve, 3000));
+                } catch (e) {}
+            }
+
+            const omniKey = process.env.OMNIROUTE_API_KEY || 'sk-28cd06a63e40d0fa-1d04bb-be07bf06';
+
+            // Build env: set ONLY ANTHROPIC_API_KEY — never set ANTHROPIC_AUTH_TOKEN
+            const env = { ...process.env };
+            env.ANTHROPIC_BASE_URL  = 'http://127.0.0.1:20128';
+            env.ANTHROPIC_API_KEY   = omniKey;
+            env.ANTHROPIC_MODEL     = process.env.ANTHROPIC_MODEL || 'auto/best-coding';
+            env.ANTHROPIC_DEFAULT_MODEL = process.env.ANTHROPIC_MODEL || 'auto/best-coding';
+            delete env.ANTHROPIC_AUTH_TOKEN; // Remove to prevent dual-auth conflict
+
+            console.log(`\n🚀 Launching Claude Code → OmniRoute proxy (http://127.0.0.1:20128)`);
+            console.log(`🔑 ANTHROPIC_API_KEY set. ANTHROPIC_AUTH_TOKEN cleared (conflict prevention).\n`);
+
+            const proc = spawn(claudeExe, claudeArgs, {
+                env,
+                stdio: 'inherit',
+                shell: true
+            });
+            proc.on('exit', (code) => process.exit(code || 0));
+        })();
+
     } else {
         console.log('Usage: nexus [status | agent <query> | claude [args] | sync [message] | build "<prompt>" [--db sqlite|postgres|prisma] | route "<prompt>" | obsidian]');
+        process.exit(0);
     }
 }
 

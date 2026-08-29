@@ -6,7 +6,15 @@
       "PowerShell(python *)",
       "PowerShell(git *)",
       "PowerShell(nexus *)",
-      "PowerShell(& .\\nexus.cmd *)"
+      "PowerShell(& .\\nexus.cmd *)",
+      "PowerShell(omniroute *)",
+      "PowerShell(start *)",
+      "PowerShell(& omniroute *)",
+      "Bash(node *)",
+      "Bash(git *)",
+      "Bash(npm *)",
+      "Bash(nexus *)",
+      "Bash(omniroute *)"
     ]
   },
   "enabledMcpjsonServers": [

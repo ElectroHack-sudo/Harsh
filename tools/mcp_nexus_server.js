@@ -1,10 +1,28 @@
 #!/usr/bin/env node
 /**
- * Nexus Unified MCP Server (Model Context Protocol)
- * 
- * Exposes OmniRoute, Claude Code, Obsidian, GitHub, and Database tools
+ * Nexus Unified MCP Server (Model Context Protocol) v1.3.0
+ *
+ * Exposes OmniRoute, Agency Agents, Obsidian, GitHub, and Database tools
  * to Claude Code, Antigravity, VoiceOS, and external AI agents over stdio.
+ *
+ * Tools:
+ *   nexus_status          - Live health across all 6 pillars
+ *   nexus_full_pipeline   - Full 5-step automated build pipeline
+ *   nexus_sync_github     - Stage + commit + push to GitHub
+ *   nexus_sync_obsidian   - Generate/update project note in vault
+ *   nexus_append_log      - Append timestamped entry to Obsidian audit trail
+ *   nexus_provision_db    - Scaffold SQLite/Postgres/Supabase/Prisma
+ *   nexus_omniroute_route - Get model tier strategy from OmniRoute
+ *   nexus_query_llm       - Direct LLM query through OmniRoute
+ *   nexus_find_agent      - Search 270+ Agency specialist agents
+ *   nexus_get_agent       - Get full agent persona and instructions
+ *   nexus_sync_agency     - Sync agent catalog to Obsidian vault
  */
+
+// Load .env before any module reads process.env
+try {
+    require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
+} catch (e) {}
 
 const readline = require('readline');
 const { executePipeline, getFullSystemStatus } = require('./nexus_coordinator');
@@ -134,6 +152,19 @@ const TOOLS = [
             type: "object",
             properties: {}
         }
+    },
+    {
+        name: "nexus_append_log",
+        description: "Appends a timestamped audit log entry to a specific section of the Obsidian project note. Use this to record milestones, findings, decisions, or completed steps mid-session.",
+        inputSchema: {
+            type: "object",
+            properties: {
+                projectName: { type: "string", description: "Name of the project note to update (defaults to current workspace)" },
+                section: { type: "string", description: "Section header to append to (e.g. '📈 Execution Logs & Audit Trail')" },
+                message: { type: "string", description: "The log entry text to append" }
+            },
+            required: ["message"]
+        }
     }
 ];
 
@@ -189,6 +220,10 @@ async function handleToolCall(id, name, args) {
             resultData = getAgentDetails(args.agentId);
         } else if (name === "nexus_sync_agency") {
             resultData = syncAgencyCatalogToObsidian();
+        } else if (name === "nexus_append_log") {
+            const pName = args.projectName || require('path').basename(process.cwd());
+            const section = args.section || '📈 Execution Logs & Audit Trail';
+            resultData = appendToSection(pName, section, args.message);
         } else {
             return {
                 jsonrpc: "2.0",
